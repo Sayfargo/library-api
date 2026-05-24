@@ -1,0 +1,6 @@
+db:
+  conn_string: ""
+  pool:
+    max_conns: 20
+    min_conns: 5
+    health_check_period: 1m
