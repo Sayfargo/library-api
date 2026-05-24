@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"library-app/internal/jsonutil"
 	"library-app/internal/models"
@@ -60,7 +61,22 @@ func (h *Handler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetBooks(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.bookService.GetBooks(r.Context())
-	makeAndSend(w, resp, err, http.StatusOK)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			slog.Info("Connection refused by user")
+		} else if errors.Is(err, models.ErrEmptyFields) {
+			jsonutil.EncodeError(w, err.Error(), http.StatusBadRequest)
+		} else if errors.Is(err, models.ErrNotFound) {
+			jsonutil.EncodeError(w, err.Error(), http.StatusNotFound)
+		} else {
+			jsonutil.EncodeError(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return
+	}
 }
 
 func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
