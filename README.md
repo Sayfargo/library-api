@@ -50,20 +50,18 @@ Minimal REST API for personal book library management with soft delete.
 
 Server runs on http://localhost:8080
 
-### Project Structure
+## Project Structure
 
-libraryapp/
-├── cmd/
-│ └── app/ # Entry point
-├── internal/
-│ ├── app/ # Application setup
-│ ├── config/ # Configuration
-│ ├── db/ # Database connection
-│ ├── handlers/ # HTTP handlers
-│ ├── jsonutil/ # JSON utilities
-│ ├── models/ # Data models
-│ ├── repository/ # Database layer
-│ ├── service/ # Business logic
-│ └── web/ # Frontend (optional)
-├── migrations/ # SQL migrations
-└── out/ # Build output
+- `cmd/app/` - Entry point
+- `internal/`
+  - `app/` - Application setup
+  - `config/` - Configuration
+  - `db/` - Database connection
+  - `handlers/` - HTTP handlers
+  - `jsonutil/` - JSON utilities
+  - `models/` - Data models
+  - `repository/` - Database layer
+  - `service/` - Business logic
+  - `web/` - Frontend (optional)
+- `migrations/` - SQL migrations
+- `out/` - Build output
