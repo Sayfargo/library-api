@@ -1,12 +1,7 @@
 package handlers
 
 import (
-	"context"
-	"errors"
-	"library-app/internal/jsonutil"
 	"library-app/internal/service"
-	"log/slog"
-	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -26,27 +21,15 @@ func NewHandler(bookService *service.BookService) *Handler {
 func (h *Handler) InitRoutes() *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Timeout(time.Minute))
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/books", h.GetBooks)
+		r.Post("/books", h.CreateBook) // {title, author, manufacture, description}
+		r.Patch("/books/{id}", h.UpdateBook)
 	})
 
 	return r
-}
-
-func (h *Handler) GetBooks(w http.ResponseWriter, r *http.Request) {
-
-	books, err := h.bookService.GetBooks(r.Context())
-	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			slog.Info("Connection refused by user")
-		} else {
-			jsonutil.EncodeError(w, "Internal server error", http.StatusInternalServerError)
-		}
-		return
-	}
-
-	jsonutil.EncodeSuccess(w, books, http.StatusOK)
 }

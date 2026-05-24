@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"library-app/internal/models"
 	"log/slog"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,7 +21,86 @@ func NewBooksRepo(db *pgxpool.Pool) *BooksRepo {
 	}
 }
 
-func (r *BooksRepo) GetBooks(ctx context.Context) (books []models.Book, err error) {
+func (r *BooksRepo) UpdateBook(ctx context.Context, req models.Book) (resp models.Book, err error) {
+
+	if ctx.Err() != nil {
+		return models.Book{}, ctx.Err()
+	}
+
+	query := `
+		UPDATE libraryapp.books 
+		SET title = $1, 
+		    author = $2, 
+		    manufacture = $3, 
+		    description = $4 
+		WHERE id = $5 
+		RETURNING id, title, author, manufacture, description;
+	`
+
+	err = r.db.QueryRow(ctx, query,
+		req.Title,
+		req.Author,
+		req.Manufacture,
+		req.Description,
+		req.ID,
+	).Scan(
+		&resp.ID,
+		&resp.Title,
+		&resp.Author,
+		&resp.Manufacture,
+		&resp.Description,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("There is no book with this id", "err", err, "id", req.ID)
+
+		} else {
+			slog.Error("Failed request execution", "err", err, "query", query)
+		}
+		return models.Book{}, err
+	}
+
+	return resp, nil
+}
+
+func (r *BooksRepo) CreateBook(ctx context.Context, req models.Book) (resp models.Book, err error) {
+
+	if ctx.Err() != nil {
+		return models.Book{}, ctx.Err()
+	}
+
+	query := `
+				INSERT INTO libraryapp.books 
+				(id, title, author, manufacture, description)
+				VALUES ($1, $2, $3, $4, $5) 
+				RETURNING id, title, author, manufacture, description
+			`
+
+	err = r.db.QueryRow(ctx, query,
+		uuid.New(),
+		req.Title,
+		req.Author,
+		req.Manufacture,
+		req.Description,
+	).Scan(
+		&resp.ID,
+		&resp.Title,
+		&resp.Author,
+		&resp.Manufacture,
+		&resp.Description,
+	)
+
+	if err != nil {
+		slog.Error("Failed request execution", "err", err, "query", query)
+		return models.Book{}, err
+	}
+
+	return resp, nil
+}
+
+func (r *BooksRepo) GetBooks(ctx context.Context) (resp []models.Book, err error) {
+
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -28,16 +109,16 @@ func (r *BooksRepo) GetBooks(ctx context.Context) (books []models.Book, err erro
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
-		slog.Error("Failed request with query", "err", err, "query", query)
+		slog.Error("Failed request execution", "err", err, "query", query)
 		return nil, err
 	}
 
-	books, err = pgx.CollectRows(rows, pgx.RowToStructByName[models.Book])
+	resp, err = pgx.CollectRows(rows, pgx.RowToStructByName[models.Book])
 	if err != nil {
 		slog.Error("Failed to collect rows into struct slice", "err", err, "query", query)
 		return nil, err
 	}
 
-	return books, nil
+	return resp, nil
 
 }

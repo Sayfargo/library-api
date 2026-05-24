@@ -1,7 +1,14 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
+)
+
+var (
+	ErrEmptyFields = errors.New("Title or author are empty")
+	ErrNotFound    = errors.New("Book not found")
 )
 
 type Book struct {
@@ -10,4 +17,12 @@ type Book struct {
 	Author      string    `json:"author" db:"author"`
 	Manufacture uint16    `json:"manufacture" db:"manufacture"`
 	Description string    `json:"description" db:"description"`
+}
+
+func (b *Book) Validate() error {
+	if len(b.Title) == 0 || len(b.Author) == 0 {
+		return ErrEmptyFields
+	}
+
+	return nil
 }
