@@ -2,62 +2,14 @@ package db
 
 import (
 	"context"
-	"fmt"
+	"library-app/internal/config"
 	"log/slog"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 )
 
-type postgresConfig struct {
-	DB struct {
-		Conn string `mapstructure:"conn_string"`
-		Pool struct {
-			MaxConns          int32         `mapstructure:"max_conns"`
-			MinConns          int32         `mapstructure:"min_conns"`
-			HealthCheckPeriod time.Duration `mapstructure:"health_check_period"`
-		} `mapstructure:"pool"`
-	} `mapstructure:"db"`
-}
-
-func loadPgxConfig() (cfg postgresConfig, err error) {
-	slog.Info("Starting load database config with viper")
-	DB_PATH_CONFIG := os.Getenv("DB_PATH_CONFIG")
-
-	if DB_PATH_CONFIG == "" {
-		return postgresConfig{}, fmt.Errorf("Empty path: %s", DB_PATH_CONFIG)
-	}
-
-	viper.SetConfigFile(DB_PATH_CONFIG)
-	viper.SetConfigType("yaml")
-
-	viper.AutomaticEnv()
-
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	if err := viper.ReadInConfig(); err != nil {
-		slog.Error("Can't read config file", "err", err, "path", DB_PATH_CONFIG)
-		return postgresConfig{}, err
-	}
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		slog.Error("Can't unmarshal yaml file into struct", "err", err)
-		return postgresConfig{}, err
-	}
-
-	return cfg, nil
-
-}
-
-func InitDB() (pool *pgxpool.Pool, err error) {
-	slog.Info("Start to init database")
-	cfg, err := loadPgxConfig()
-	if err != nil {
-		return nil, err
-	}
+func InitDB(cfg *config.Config) (pool *pgxpool.Pool, err error) {
+	slog.Info("Start initing database with config", "conn", cfg.DB.Conn)
 
 	pgxCfg, err := pgxpool.ParseConfig(cfg.DB.Conn)
 	if err != nil {
@@ -81,6 +33,7 @@ func InitDB() (pool *pgxpool.Pool, err error) {
 		return nil, err
 	}
 
+	slog.Info("Database started successfully")
 	return pool, nil
 
 }

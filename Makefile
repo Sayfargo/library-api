@@ -1,14 +1,17 @@
 include .env
 export
 
-env-up:
+service-up:
+	docker compose up -d
+
+service-down:
+	docekr compose down -v
+
+postgres-up:
 	docker compose up -d library-postgres
 
-env-down:
+postgres-down:
 	docker compose down library-postgres
-
-run-service:
-	docker compose up -d
 	
 goose-create:
 	@if [ -z "$(name)" ]; then \
