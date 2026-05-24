@@ -17,6 +17,7 @@ type Book struct {
 	Author      string    `json:"author" db:"author"`
 	Manufacture uint16    `json:"manufacture" db:"manufacture"`
 	Description string    `json:"description" db:"description"`
+	IsDeleted   bool      `json:"-" db:"is_deleted"`
 }
 
 func (b *Book) Validate() error {

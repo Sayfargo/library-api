@@ -21,6 +21,31 @@ func NewBooksRepo(db *pgxpool.Pool) *BooksRepo {
 	}
 }
 
+func (r *BooksRepo) SoftDelete(ctx context.Context, id string) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	query := `
+		UPDATE libraryapp.books
+		SET is_deleted = true
+		WHERE id = $1 AND is_deleted = false
+	`
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		slog.Error("Failed request execution", "err", err, "id", id)
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		slog.Warn("There is no book with this id", "err", err, "id", id)
+		return pgx.ErrNoRows
+	}
+
+	return nil
+}
+
 func (r *BooksRepo) UpdateBook(ctx context.Context, req models.Book) (resp models.Book, err error) {
 
 	if ctx.Err() != nil {
@@ -33,7 +58,7 @@ func (r *BooksRepo) UpdateBook(ctx context.Context, req models.Book) (resp model
 		    author = $2, 
 		    manufacture = $3, 
 		    description = $4 
-		WHERE id = $5 
+		WHERE id = $5 AND is_deleted = false
 		RETURNING id, title, author, manufacture, description;
 	`
 
@@ -53,7 +78,7 @@ func (r *BooksRepo) UpdateBook(ctx context.Context, req models.Book) (resp model
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			slog.Error("There is no book with this id", "err", err, "id", req.ID)
+			slog.Warn("There is no book with this id", "err", err, "id", req.ID)
 
 		} else {
 			slog.Error("Failed request execution", "err", err, "query", query)
@@ -105,7 +130,8 @@ func (r *BooksRepo) GetBooks(ctx context.Context) (resp []models.Book, err error
 		return nil, ctx.Err()
 	}
 
-	query := `SELECT id, title, author, manufacture, description FROM libraryapp.books;`
+	query := `SELECT id, title, author, manufacture, description, is_deleted FROM libraryapp.books
+				WHERE is_deleted = false;`
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {

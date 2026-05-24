@@ -7,6 +7,7 @@ service-up:
 service-down:
 	docker compose down -v
 
+
 postgres-up:
 	docker compose up -d library-postgres
 

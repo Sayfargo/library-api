@@ -12,6 +12,29 @@ import (
 	"github.com/google/uuid"
 )
 
+func (h *Handler) SoftDelete(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	_, err := uuid.Parse(id)
+	if err != nil {
+		jsonutil.EncodeError(w, "Missing book id", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.bookService.SoftDelete(r.Context(), id); err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			jsonutil.EncodeError(w, err.Error(), http.StatusNotFound)
+		} else if errors.Is(err, context.Canceled) {
+			slog.Info("Connection refused by user")
+		} else {
+			jsonutil.EncodeError(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 

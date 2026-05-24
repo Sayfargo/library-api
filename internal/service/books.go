@@ -12,6 +12,7 @@ type BookStorage interface {
 	GetBooks(ctx context.Context) (resp []models.Book, err error)
 	CreateBook(ctx context.Context, req models.Book) (resp models.Book, err error)
 	UpdateBook(ctx context.Context, req models.Book) (resp models.Book, err error)
+	SoftDelete(ctx context.Context, id string) error
 }
 
 type BookService struct {
@@ -22,6 +23,20 @@ func NewBookService(repo BookStorage) *BookService {
 	return &BookService{
 		repo: repo,
 	}
+}
+
+func (b *BookService) SoftDelete(ctx context.Context, id string) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if err := b.repo.SoftDelete(ctx, id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (b *BookService) UpdateBook(ctx context.Context, req models.Book) (resp models.Book, err error) {

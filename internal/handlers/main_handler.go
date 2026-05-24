@@ -28,7 +28,8 @@ func (h *Handler) InitRoutes() *chi.Mux {
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/books", h.GetBooks)
 		r.Post("/books", h.CreateBook) // {title, author, manufacture, description}
-		r.Patch("/books/{id}", h.UpdateBook)
+		r.Put("/books/{id}", h.UpdateBook)
+		r.Patch("/books/{id}", h.SoftDelete)
 	})
 
 	return r
